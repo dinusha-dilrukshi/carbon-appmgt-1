@@ -289,25 +289,11 @@ public class SAML2AuthenticationHandler extends AbstractHandler implements Manag
                 GatewayUtils.logAndThrowException(log, errorMessage, null);
             }
 
-            // Validate the signature if there is any.
-            String responseSigningKeyAlias = configuration.getFirstProperty(AppMConstants.SSO_CONFIGURATION_RESPONSE_SIGNING_KEY_ALIAS);
-
-            // User the certificate of the super tenant since the responses are signed by the super tenant.
-            Credential certificate = GatewayUtils.getIDPCertificate("carbon.super", responseSigningKeyAlias);
-            
-            boolean isValidSignature = idpMessage.validateSignature(certificate);
-            if(!isValidSignature){
-                String errorMessage = String.format("The signature of the SAML message received by the ASC URL ('%s'), can't be validated.", fullResourceURL);
-                GatewayUtils.logAndThrowException(log, errorMessage, null);
-            }
-
-
         } catch (SAMLException e) {
             String errorMessage = String.format("Error while processing the IDP call back request to the ACS URL ('%s')", fullResourceURL);
-            GatewayUtils.logAndThrowException(log, errorMessage, e);
-        } catch (IdentitySAML2SSOException e) {
-            String errorMessage = String.format("Error while processing the IDP call back request to the ACS URL ('%s')", fullResourceURL);
-            GatewayUtils.logAndThrowException(log, errorMessage, e);
+            log.error(errorMessage, e);
+            GatewayUtils.send401(messageContext, "Un-Authorized SAML Response");
+            return false;
         }
 
         GatewayUtils.logWithRequestInfo(log, messageContext, String.format("%s is available in request.", idpMessage.getSAMLRequest() != null ? "SAMLRequest" : "SAMLResponse"));
@@ -325,11 +311,8 @@ public class SAML2AuthenticationHandler extends AbstractHandler implements Manag
             return false;
         } else{
 
-            if(idpMessage.isResponseValidityPeriodExpired()){
-
-                if(log.isDebugEnabled()){
-                    GatewayUtils.logWithRequestInfo(log, messageContext, "The validity period of the SAML Response is expired.");
-                }
+            //Validate the SAML Response
+            if(!idpMessage.isValidSAMLResponse(idpMessage.getSAMLResponse(), webApp, configuration)){
                 requestAuthentication(messageContext);
                 return false;
             }
