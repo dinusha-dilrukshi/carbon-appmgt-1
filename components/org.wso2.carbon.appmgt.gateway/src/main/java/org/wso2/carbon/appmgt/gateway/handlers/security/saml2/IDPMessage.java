@@ -35,6 +35,7 @@ import org.wso2.carbon.appmgt.api.model.WebApp;
 import org.wso2.carbon.appmgt.gateway.utils.GatewayUtils;
 import org.wso2.carbon.appmgt.impl.AppMConstants;
 import org.wso2.carbon.appmgt.impl.AppManagerConfiguration;
+import org.wso2.carbon.appmgt.impl.idp.sso.SSOConfiguratorUtil;
 import org.wso2.carbon.identity.sso.saml.exception.IdentitySAML2SSOException;
 
 import java.util.List;
@@ -144,23 +145,33 @@ public class IDPMessage {
         // validate audience restriction
         validateAudienceRestriction(assertion, webapp);
 
-        // validate signature
-        String responseSigningKeyAlias = configuration.getFirstProperty(AppMConstants.SSO_CONFIGURATION_RESPONSE_SIGNING_KEY_ALIAS);
+        boolean responseSigningEnabled = SSOConfiguratorUtil.isResponseSigningEnabled();
+        boolean assertionSigningEnabled = SSOConfiguratorUtil.isAssertionSigningEnabled();
 
-        // User the certificate of the super tenant since the responses are signed by the super tenant.
         Credential certificate = null;
-        try {
-            certificate = GatewayUtils.getIDPCertificate("carbon.super", responseSigningKeyAlias);
-        } catch (IdentitySAML2SSOException e) {
-            String errorMessage = "Error while getting IdP Certificate";
-            GatewayUtils.logAndThrowException(log, errorMessage, e);
+
+        if (responseSigningEnabled || assertionSigningEnabled) {
+            // validate signature
+            String responseSigningKeyAlias = configuration.getFirstProperty(AppMConstants.SSO_CONFIGURATION_RESPONSE_SIGNING_KEY_ALIAS);
+
+            // User the certificate of the super tenant since the responses are signed by the super tenant.
+            try {
+                certificate = GatewayUtils.getIDPCertificate("carbon.super", responseSigningKeyAlias);
+            } catch (IdentitySAML2SSOException e) {
+                String errorMessage = "Error while getting IdP Certificate";
+                GatewayUtils.logAndThrowException(log, errorMessage, e);
+            }
         }
 
         //validate SAML Response signature
-        validateResponseSignature(certificate);
+        if (responseSigningEnabled) {
+            validateResponseSignature(certificate);
+        }
 
         //validate SAML Assertion signature
-        validateAssertionSignature(certificate);
+        if (assertionSigningEnabled) {
+            validateAssertionSignature(certificate);
+        }
 
         return true;
     }
