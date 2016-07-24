@@ -113,6 +113,7 @@ public class IDPMessage {
      * Validate the SAML Response before continue with anything
      * @param samlResponse
      * @param webapp
+     * @param configuration
      * @return
      */
     public boolean isValidSAMLResponse(StatusResponseType samlResponse, WebApp webapp,
@@ -129,6 +130,11 @@ public class IDPMessage {
                     return false;
                 }
                 assertion = assertions.get(0);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("SAML Response does not have assertions.");
+                }
+                return false;
             }
         }
 
@@ -138,7 +144,7 @@ public class IDPMessage {
         // validate audience restriction
         validateAudienceRestriction(assertion, webapp);
 
-        // validate assertion signature
+        // validate signature
         String responseSigningKeyAlias = configuration.getFirstProperty(AppMConstants.SSO_CONFIGURATION_RESPONSE_SIGNING_KEY_ALIAS);
 
         // User the certificate of the super tenant since the responses are signed by the super tenant.
@@ -150,21 +156,23 @@ public class IDPMessage {
             GatewayUtils.logAndThrowException(log, errorMessage, e);
         }
 
+        //validate SAML Response signature
+        validateResponseSignature(certificate);
+
+        //validate SAML Assertion signature
         validateAssertionSignature(certificate);
 
-        //validate SAML Response signature
-        validateSignature(certificate);
-
         return true;
-
     }
 
-    private boolean validateSignature(Credential credential) {
+    /**
+     * Validate SAML Response signature
+     * @param credential
+     * @return
+     */
+    private boolean validateResponseSignature(Credential credential) {
 
-        SignatureValidator signatureValidator = new SignatureValidator(credential);
-        SAMLSignatureProfileValidator signatureProfileValidator = new SAMLSignatureProfileValidator();
-
-        // Get the SAML response signature and assertion signature
+        // Get the SAML response signature
         Signature responseSignature = null;
         if(isResponse()){
             responseSignature = getSAMLResponse().getSignature();
@@ -172,23 +180,7 @@ public class IDPMessage {
             responseSignature = getSAMLRequest().getSignature();
         }
 
-        //Validate SAML Response signature
-        if(responseSignature != null){
-            try {
-                signatureProfileValidator.validate(responseSignature);
-                signatureValidator.validate(responseSignature);
-            } catch (ValidationException e) {
-                log.error("Signature of the SAML message can't be validated.", e);
-                return false;
-            }
-        }else{
-            if(log.isDebugEnabled()){
-                log.debug("SAML message has not been singed.");
-            }
-        }
-
-        return true;
-
+        return validateSignature(credential, responseSignature);
     }
 
     /**
@@ -198,31 +190,55 @@ public class IDPMessage {
      */
     private boolean validateAssertionSignature(Credential credential) {
 
-        SignatureValidator signatureValidator = new SignatureValidator(credential);
-        SAMLSignatureProfileValidator signatureProfileValidator = new SAMLSignatureProfileValidator();
-
         // Get the SAML response signature and assertion signature
         Signature assertionSignature = null;
         if(isResponse()){
             assertionSignature = ((Response)getSAMLResponse()).getAssertions().get(0).getSignature();
         }
 
-        //Validate SAML Response Assertion signature
-        if(assertionSignature != null){
+        return validateSignature(credential, assertionSignature);
+    }
+
+    /**
+     * Signature validation helper method.
+     * @param credential
+     * @param signature
+     * @return
+     */
+    private boolean validateSignature(Credential credential, Signature signature) {
+
+        SignatureValidator signatureValidator = new SignatureValidator(credential);
+        SAMLSignatureProfileValidator signatureProfileValidator = new SAMLSignatureProfileValidator();
+
+        //Validate signature : Could be either SAML response signature or SAML Assertion signature
+        if(signature != null){
             try {
-                signatureProfileValidator.validate(assertionSignature);
-                signatureValidator.validate(assertionSignature);
+                signatureProfileValidator.validate(signature);
             } catch (ValidationException e) {
-                log.error("Assertion signature of the SAML message can't be validated.", e);
+                log.error("SAML Response signature or Aseertion signature do not confirm to SAML signature profile. " +
+                        "Possible XML Signature Wrapping Attack");
+                if (log.isDebugEnabled()) {
+                    log.debug("SAML signature do not confirm to SAML signature profile.", e);
+                }
                 return false;
             }
-        } else {
-            log.error("SAML Response Assertion has not been singed.");
-            return false;
+
+            try {
+                signatureValidator.validate(signature);
+            } catch (ValidationException e) {
+                log.error("Response signature or Assertion signature of the SAML message can't be validated.");
+                if (log.isDebugEnabled()) {
+                    log.debug("Response signature or Assertion signature of the SAML message can't be validated.", e);
+                }
+                return false;
+            }
+        }else{
+            if(log.isDebugEnabled()){
+                log.debug("SAML message has not been singed.");
+            }
         }
 
         return true;
-
     }
 
     /**

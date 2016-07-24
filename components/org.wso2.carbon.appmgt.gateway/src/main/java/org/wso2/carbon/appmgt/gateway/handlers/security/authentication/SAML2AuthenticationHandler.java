@@ -291,8 +291,11 @@ public class SAML2AuthenticationHandler extends AbstractHandler implements Manag
 
         } catch (SAMLException e) {
             String errorMessage = String.format("Error while processing the IDP call back request to the ACS URL ('%s')", fullResourceURL);
-            log.error(errorMessage, e);
-            GatewayUtils.send401(messageContext, "Un-Authorized SAML Response");
+            log.error(errorMessage);
+            if (log.isDebugEnabled()) { //Do not log the stack trace without checking isDebugEnabled, because log can be filled by SAML Response XSW attacks.
+                log.debug(errorMessage, e);
+            }
+            GatewayUtils.send401(messageContext, "Unauthorized SAML Response");
             return false;
         }
 
