@@ -140,10 +140,14 @@ public class IDPMessage {
         }
 
         // validate the assertion validity period
-        validateAssertionValidityPeriod(assertion);
+        if (!validateAssertionValidityPeriod(assertion)) {
+            return false;
+        }
 
         // validate audience restriction
-        validateAudienceRestriction(assertion, webapp);
+        if (!validateAudienceRestriction(assertion, webapp)) {
+            return false;
+        }
 
         boolean responseSigningEnabled = SSOConfiguratorUtil.isResponseSigningEnabled();
         boolean assertionSigningEnabled = SSOConfiguratorUtil.isAssertionSigningEnabled();
@@ -164,13 +168,13 @@ public class IDPMessage {
         }
 
         //validate SAML Response signature
-        if (responseSigningEnabled) {
-            validateResponseSignature(certificate);
+        if (responseSigningEnabled && !validateResponseSignature(certificate)) {
+            return false;
         }
 
         //validate SAML Assertion signature
-        if (assertionSigningEnabled) {
-            validateAssertionSignature(certificate);
+        if (assertionSigningEnabled && !validateAssertionSignature(certificate)) {
+            return false;
         }
 
         return true;
@@ -247,6 +251,7 @@ public class IDPMessage {
             if(log.isDebugEnabled()){
                 log.debug("SAML message has not been singed.");
             }
+            return false;
         }
 
         return true;
