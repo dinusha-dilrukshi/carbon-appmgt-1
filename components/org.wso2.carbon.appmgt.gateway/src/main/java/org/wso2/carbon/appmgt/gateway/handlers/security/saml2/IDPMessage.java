@@ -119,8 +119,8 @@ public class IDPMessage {
      * @param configuration
      * @return
      */
-    public boolean isValidSAMLResponse(StatusResponseType samlResponse, WebApp webapp,
-                                       AppManagerConfiguration configuration) {
+    public boolean validateSignatureAndAudienceRestriction(StatusResponseType samlResponse, WebApp webapp,
+                                                           AppManagerConfiguration configuration) {
 
         Assertion assertion = null;
         if(samlResponse != null){
@@ -135,11 +135,6 @@ public class IDPMessage {
             }
 
             assertion = assertions.get(0);
-        }
-
-        // validate the assertion validity period
-        if (!validateAssertionValidityPeriod(assertion)) {
-            return false;
         }
 
         // validate audience restriction
@@ -258,9 +253,21 @@ public class IDPMessage {
     /**
      * Validates the 'Not Before' and 'Not On Or After' conditions of the SAML Assertion
      *
-     * @param assertion SAML Assertion element
      */
-    private boolean validateAssertionValidityPeriod(Assertion assertion) {
+    public boolean validateAssertionValidityPeriod() {
+
+        Assertion assertion = null;
+        Response response = (Response) samlResponse;
+        List<Assertion> assertions = response.getAssertions();
+
+        if (CollectionUtils.isEmpty(assertions)) {
+            if (log.isDebugEnabled()) {
+                log.debug("SAML Response does not have assertions.");
+            }
+            return false;
+        }
+
+        assertion = assertions.get(0);
 
         DateTime validFrom = assertion.getConditions().getNotBefore();
         DateTime validTill = assertion.getConditions().getNotOnOrAfter();

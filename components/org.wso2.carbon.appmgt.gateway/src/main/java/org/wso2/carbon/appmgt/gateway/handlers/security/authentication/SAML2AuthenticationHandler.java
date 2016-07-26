@@ -37,7 +37,6 @@ import org.apache.synapse.rest.AbstractHandler;
 import org.apache.synapse.rest.RESTConstants;
 import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.ResponseImpl;
-import org.opensaml.xml.security.credential.Credential;
 import org.wso2.carbon.appmgt.api.AppManagementException;
 import org.wso2.carbon.appmgt.api.model.URITemplate;
 import org.wso2.carbon.appmgt.api.model.WebApp;
@@ -57,7 +56,6 @@ import org.wso2.carbon.appmgt.impl.AppManagerConfiguration;
 import org.wso2.carbon.appmgt.impl.DefaultAppRepository;
 import org.wso2.carbon.appmgt.impl.SAMLConstants;
 import org.wso2.carbon.context.CarbonContext;
-import org.wso2.carbon.identity.sso.saml.exception.IdentitySAML2SSOException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -314,9 +312,15 @@ public class SAML2AuthenticationHandler extends AbstractHandler implements Manag
             return false;
         } else{
 
-            //Validate the SAML Response
-            if(!idpMessage.isValidSAMLResponse(idpMessage.getSAMLResponse(), webApp, configuration)){
+            //Validate SAML Response validity period
+            if (!idpMessage.validateAssertionValidityPeriod()) {
                 requestAuthentication(messageContext);
+                return false;
+            }
+
+            //Validate the SAML Response
+            if(!idpMessage.validateSignatureAndAudienceRestriction(idpMessage.getSAMLResponse(), webApp, configuration)){
+                GatewayUtils.send401(messageContext, "Unauthorized SAML Response");
                 return false;
             }
 
