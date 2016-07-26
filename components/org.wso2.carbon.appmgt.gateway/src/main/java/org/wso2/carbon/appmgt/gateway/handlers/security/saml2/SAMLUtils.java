@@ -267,6 +267,12 @@ public class SAMLUtils {
                 throw new SAMLException("Error occured while processing saml2 response");
             }
 
+            NodeList assertionList = unmarshalledSamlResponse.getDOM().getElementsByTagNameNS(SAMLConstants.SAML20_NS, "Assertion");
+            if (assertionList.getLength() > 1) {
+                log.error("Invalid schema for the SAML2 response. Multiple assertions detected");
+                throw new SAMLException("Error occurred while processing saml2 response");
+            }
+
             return unmarshalledSamlResponse;
         } catch (IdentityException e) {
             throw new SAMLException("Can't decode and unmarshall SAML response", e);

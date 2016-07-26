@@ -24,12 +24,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
+import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.core.*;
 import org.opensaml.security.SAMLSignatureProfileValidator;
 import org.opensaml.xml.security.credential.Credential;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureValidator;
 import org.opensaml.xml.validation.ValidationException;
+import org.w3c.dom.NodeList;
 import org.wso2.carbon.appmgt.api.model.AuthenticatedIDP;
 import org.wso2.carbon.appmgt.api.model.WebApp;
 import org.wso2.carbon.appmgt.gateway.utils.GatewayUtils;
@@ -125,18 +127,14 @@ public class IDPMessage {
             Response response = (Response) samlResponse;
             List<Assertion> assertions = response.getAssertions();
 
-            if (CollectionUtils.isNotEmpty(assertions)) {
-                if (assertions.size() != 1) {
-                    log.error("SAML Response contains multiple assertions.");
-                    return false;
-                }
-                assertion = assertions.get(0);
-            } else {
+            if (CollectionUtils.isEmpty(assertions)) {
                 if (log.isDebugEnabled()) {
                     log.debug("SAML Response does not have assertions.");
                 }
                 return false;
             }
+
+            assertion = assertions.get(0);
         }
 
         // validate the assertion validity period
