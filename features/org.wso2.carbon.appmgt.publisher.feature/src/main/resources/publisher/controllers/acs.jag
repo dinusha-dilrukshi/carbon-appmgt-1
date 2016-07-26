@@ -181,7 +181,7 @@ include("/extensions/webapp/modules/jagg/jagg.jag");
 
                     } else {
                         log.warn('User ' + sessionObj.loggedInUser + ' does not have permission to access the publisher application.Make sure the user has the publisher role.');
-                        response.sendError(401, 'You do not have permission to login to this application.Please contact your administrator and request permission.');
+                        response.sendError(403, 'You do not have permission to login to this application.Please contact your administrator and request permission.');
                     }
 
                 }
