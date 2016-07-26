@@ -1,59 +1,63 @@
-<!--
-  ~ /*
-  ~  * Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
-  ~  *
-  ~  * WSO2 Inc. licenses this file to you under the Apache License,
-  ~  * Version 2.0 (the "License"); you may not use this file except
-  ~  * in compliance with the License.
-  ~  * you may obtain a copy of the License at
-  ~  *
-  ~  *   http://www.apache.org/licenses/LICENSE-2.0
-  ~  *
-  ~  * Unless required by applicable law or agreed to in writing,
-  ~  * software distributed under the License is distributed on an
-  ~  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-  ~  * KIND, either express or implied.  See the License for the
-  ~  * specific language governing permissions and limitations
-  ~  * under the License.
-  ~  */
-  -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="utf-8">
-    <title>Forbidden - Error 403</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <style type="text/css">
+        .background{
+            background-color: #999;
+            margin: 0px;
+        }
+
+
+        .header-back {
+            background: url("/publisher/themes/appm/img/repeat.jpg") repeat-x scroll left top transparent;
+            height: 85px;
+        }
+
+        .logo {
+            height: 27px;
+            width: 171px;
+            padding-left: 200px;
+            padding-top: 30px;
+        }
+
+        .main-login-container {
+            background-color: #ccc;
+            box-shadow: 7px 7px 5px 0 rgba(50, 50, 50, 0.75);
+            margin-bottom: 20px;
+            margin-right: auto;
+            margin-left: auto;
+            margin-top: 20px;
+            height: 300px;
+            width: 1000px;
+            padding: 20px;
+        }
+
+    </style>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script type="text/javascript">
+
+        function onButtonLogoutClick(){
+            window.location.assign("/publisher/logout");
+        }
+
+    </script>
 
 </head>
+<body class="background">
 
-<body>
-
-<div class="container">
-
-    <div class="row">
-
-        <div class="span12">
-            <div class="row error-cont">
-                <div class="span6 offset3">
-                    <i class="icon-ambulance error-icon"></i>
-
-                    <h1>Error 403</h1>
-
-                    <h3>Forbidden</h3>
-                    <h4>You do not have permission to access this page</h4>
-                </div>
-            </div>
-
-        </div>
-
+<div class="header-back">
+    <div class="logo">
+        <img src="/publisher/themes/appm/img/appm_logo.png">
     </div>
-
 </div>
+
+<div class="main-login-container">
+    <button style="float:right;" onclick="onButtonLogoutClick()">Logout</button>
+    <h2>No Privileges to login</h2>
+    <div class="message">You do not have permission to login to this application.Please contact your administrator and request permission.</div>
+</div>
+
+
 </body>
 </html>
-
-
-
-
