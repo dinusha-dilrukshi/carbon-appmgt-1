@@ -35,7 +35,19 @@ import org.wso2.carbon.appmgt.api.dto.AppPageUsageDTO;
 import org.wso2.carbon.appmgt.api.dto.AppResponseTimeDTO;
 import org.wso2.carbon.appmgt.api.dto.AppUsageByUserDTO;
 import org.wso2.carbon.appmgt.api.exception.AppUsageQueryServiceClientException;
-import org.wso2.carbon.appmgt.api.model.*;
+import org.wso2.carbon.appmgt.api.model.APIIdentifier;
+import org.wso2.carbon.appmgt.api.model.App;
+import org.wso2.carbon.appmgt.api.model.BusinessOwner;
+import org.wso2.carbon.appmgt.api.model.Documentation;
+import org.wso2.carbon.appmgt.api.model.EntitlementPolicyGroup;
+import org.wso2.carbon.appmgt.api.model.FileContent;
+import org.wso2.carbon.appmgt.api.model.MobileApp;
+import org.wso2.carbon.appmgt.api.model.Subscriber;
+import org.wso2.carbon.appmgt.api.model.SubscriptionCount;
+import org.wso2.carbon.appmgt.api.model.Subscriptions;
+import org.wso2.carbon.appmgt.api.model.Tag;
+import org.wso2.carbon.appmgt.api.model.Tier;
+import org.wso2.carbon.appmgt.api.model.WebApp;
 import org.wso2.carbon.appmgt.impl.AppMConstants;
 import org.wso2.carbon.appmgt.impl.AppManagerConfiguration;
 import org.wso2.carbon.appmgt.impl.AppRepository;
@@ -44,7 +56,20 @@ import org.wso2.carbon.appmgt.impl.service.AppUsageStatisticsService;
 import org.wso2.carbon.appmgt.impl.service.ServiceReferenceHolder;
 import org.wso2.carbon.appmgt.impl.utils.AppManagerUtil;
 import org.wso2.carbon.appmgt.rest.api.publisher.AppsApiService;
-import org.wso2.carbon.appmgt.rest.api.publisher.dto.*;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.AppDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.AppListDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.BinaryDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.DocumentDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.DocumentListDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.LifeCycleDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.LifeCycleHistoryDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.LifeCycleHistoryListDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.ResponseMessageDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.StatSummaryDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.TagListDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.TierDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.TierListDTO;
+import org.wso2.carbon.appmgt.rest.api.publisher.dto.UserIdListDTO;
 import org.wso2.carbon.appmgt.rest.api.publisher.utils.RestApiPublisherUtils;
 import org.wso2.carbon.appmgt.rest.api.publisher.utils.mappings.APPMappingUtil;
 import org.wso2.carbon.appmgt.rest.api.publisher.utils.mappings.DocumentationMappingUtil;
@@ -53,22 +78,37 @@ import org.wso2.carbon.appmgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.appmgt.rest.api.util.utils.RestApiUtil;
 import org.wso2.carbon.appmgt.rest.api.util.validation.BeanValidator;
 import org.wso2.carbon.appmgt.rest.api.util.validation.CommonValidator;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.governance.api.exception.GovernanceException;
 import org.wso2.carbon.governance.api.generic.GenericArtifactManager;
 import org.wso2.carbon.governance.api.generic.dataobjects.GenericArtifact;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
+import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserStoreException;
+import org.wso2.carbon.user.api.UserStoreManager;
+import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import org.wso2.mobile.utils.utilities.ZipFileReading;
 
 import javax.ws.rs.core.Response;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * This is the service implementation class for Publisher API related operations
@@ -397,6 +437,7 @@ public class AppsApiServiceImpl extends AppsApiService {
             } else if (AppMConstants.WEBAPP_ASSET_TYPE.equals(appType)) {
 
                 WebApp webApp = APPMappingUtil.fromDTOToWebapp(body);
+                validateWebApp(webApp, appProvider, true);
                 webApp.setCreatedTime(RestApiPublisherUtils.getCreatedTimeEpoch());
                 applicationId = appProvider.createWebApp(webApp);
             }
@@ -414,6 +455,72 @@ public class AppsApiServiceImpl extends AppsApiService {
         return Response.ok().entity(response).build();
     }
 
+    /**
+     * @param webApp
+     * @param appProvider
+     * @param isNewApp    if the app is a new app or existing app
+     * @return
+     * @throws AppManagementException
+     */
+    private boolean validateWebApp(WebApp webApp, APIProvider appProvider, boolean isNewApp)
+            throws AppManagementException {
+        //check if the context is unique
+        if (isNewApp) {
+            boolean isContextExists = appProvider.isContextExist(webApp.getContext());
+            if (isContextExists) {
+                throw new AppManagementException("Context - " + webApp.getContext() + " already exists");
+            }
+        }
+
+        //check if the business owner exists
+        if (webApp.getBusinessOwner() != null) {
+            int businessOwnerId = Integer.parseInt(webApp.getBusinessOwner());
+            BusinessOwner businessOwner = appProvider.getBusinessOwner(businessOwnerId);
+            if (businessOwner == null) {
+                throw new AppManagementException("Invalid Business Owner - " + businessOwnerId);
+            }
+        }
+
+        //check if the role/tiers are exists
+        //iterate through all groups
+        List<EntitlementPolicyGroup> groups = webApp.getAccessPolicyGroups();
+        String tenantDomainName = RestApiUtil.getLoggedInUserTenantDomain();
+        for (EntitlementPolicyGroup group : groups) {
+            //iterate through all roles
+            List<String> roles = group.getUserRolesAsList();
+            for (String role : roles) {
+                try {
+                    PrivilegedCarbonContext carbonContext = PrivilegedCarbonContext.getThreadLocalCarbonContext();
+                    RealmService realmService = (RealmService) carbonContext.getOSGiService(RealmService.class, null);
+                    int tenantId =
+                            ServiceReferenceHolder.getInstance().getRealmService().getTenantManager().getTenantId(
+                                    tenantDomainName);
+                    UserRealm realm = realmService.getTenantUserRealm(tenantId);
+                    UserStoreManager manager = realm.getUserStoreManager();
+                    //check if the role is exists
+                    if (!manager.isExistingRole(role)) {
+                        throw new AppManagementException("Invalid role - " + role);
+                    }
+
+                } catch (UserStoreException e) {
+                    throw new AppManagementException("Error while fetching User Store");
+                }
+            }
+
+            String throttlingTier = group.getThrottlingTier();
+            Set<Tier> tiers = appProvider.getTiers(tenantDomainName);
+            boolean tierExists = false;
+            for (Tier tier : tiers) {
+                if (tier.getName().equals(throttlingTier)) {
+                    tierExists = true;
+                }
+            }
+            if (!tierExists) {
+                throw new AppManagementException("Invalid Throttling Tier - " + throttlingTier);
+            }
+        }
+        return true;
+    }
 
     /**
      * Change lifecycle state of an application
@@ -527,6 +634,7 @@ public class AppsApiServiceImpl extends AppsApiService {
                 APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
                 body.setId(appId);
                 WebApp webApp = APPMappingUtil.fromDTOToWebapp(body);
+                validateWebApp(webApp, apiProvider, false);
                 apiProvider.updateApp(webApp);
 
             } catch (AppManagementException e) {

@@ -9,11 +9,24 @@ import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 import org.wso2.carbon.appmgt.api.AppManagementException;
-import org.wso2.carbon.appmgt.api.model.*;
+import org.wso2.carbon.appmgt.api.model.APIIdentifier;
+import org.wso2.carbon.appmgt.api.model.APIStatus;
+import org.wso2.carbon.appmgt.api.model.APPLifecycleActions;
+import org.wso2.carbon.appmgt.api.model.App;
+import org.wso2.carbon.appmgt.api.model.Application;
+import org.wso2.carbon.appmgt.api.model.CustomProperty;
+import org.wso2.carbon.appmgt.api.model.EntitlementPolicyGroup;
+import org.wso2.carbon.appmgt.api.model.FileContent;
+import org.wso2.carbon.appmgt.api.model.MobileApp;
+import org.wso2.carbon.appmgt.api.model.OneTimeDownloadLink;
+import org.wso2.carbon.appmgt.api.model.SSOProvider;
+import org.wso2.carbon.appmgt.api.model.Subscriber;
+import org.wso2.carbon.appmgt.api.model.Subscription;
+import org.wso2.carbon.appmgt.api.model.URITemplate;
+import org.wso2.carbon.appmgt.api.model.WebApp;
 import org.wso2.carbon.appmgt.impl.dao.AppMDAO;
 import org.wso2.carbon.appmgt.impl.dto.Environment;
 import org.wso2.carbon.appmgt.impl.idp.sso.SSOConfiguratorUtil;
-import org.wso2.carbon.appmgt.impl.idp.sso.model.SSOEnvironment;
 import org.wso2.carbon.appmgt.impl.service.ServiceReferenceHolder;
 import org.wso2.carbon.appmgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.appmgt.impl.utils.AppManagerUtil;
@@ -38,9 +51,20 @@ import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 
 import javax.xml.namespace.QName;
 import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The default implementation of DefaultAppRepository which uses RDBMS and Carbon registry for persistence.
@@ -1455,12 +1479,14 @@ public class DefaultAppRepository implements AppRepository {
         artifact.setAttribute(AppMConstants.API_OVERVIEW_VERSION, webApp.getId().getVersion());
         artifact.setAttribute(AppMConstants.API_OVERVIEW_CONTEXT, webApp.getContext());
         artifact.setAttribute(AppMConstants.API_OVERVIEW_DISPLAY_NAME, webApp.getDisplayName());
-        artifact.setAttribute(AppMConstants.API_OVERVIEW_PROVIDER, AppManagerUtil.replaceEmailDomainBack(webApp.getId().getProviderName()));
+        artifact.setAttribute(AppMConstants.API_OVERVIEW_PROVIDER, AppManagerUtil.replaceEmailDomainBack(
+                webApp.getId().getProviderName()));
         artifact.setAttribute(AppMConstants.API_OVERVIEW_DESCRIPTION, webApp.getDescription());
         artifact.setAttribute(AppMConstants.APP_OVERVIEW_TREAT_AS_A_SITE, webApp.getTreatAsASite());
         artifact.setAttribute(AppMConstants.API_OVERVIEW_ENDPOINT_URL, webApp.getUrl());
-        artifact.setAttribute(AppMConstants.APP_IMAGES_THUMBNAIL, webApp.getThumbnailUrl());
-        artifact.setAttribute(AppMConstants.APP_IMAGES_BANNER, webApp.getBanner());
+        artifact.setAttribute(AppMConstants.APP_IMAGES_THUMBNAIL,
+                (webApp.getThumbnailUrl() == null ? " " : webApp.getThumbnailUrl()));
+        artifact.setAttribute(AppMConstants.APP_IMAGES_BANNER, (webApp.getBanner() == null ? " " : webApp.getBanner()));
         artifact.setAttribute(AppMConstants.API_OVERVIEW_LOGOUT_URL, webApp.getLogoutURL());
         artifact.setAttribute(AppMConstants.API_OVERVIEW_BUSS_OWNER, webApp.getBusinessOwner());
         artifact.setAttribute(AppMConstants.API_OVERVIEW_BUSS_OWNER_EMAIL, webApp.getBusinessOwnerEmail());
@@ -1473,7 +1499,11 @@ public class DefaultAppRepository implements AppRepository {
         artifact.setAttribute(AppMConstants.API_OVERVIEW_ALLOW_ANONYMOUS, Boolean.toString(webApp.getAllowAnonymous()));
         artifact.setAttribute(AppMConstants.API_OVERVIEW_SKIP_GATEWAY, Boolean.toString(webApp.getSkipGateway()));
         artifact.setAttribute(AppMConstants.APP_OVERVIEW_ACS_URL, webApp.getAcsURL());
-        artifact.setAttribute(AppMConstants.APP_OVERVIEW_MAKE_AS_DEFAULT_VERSION, String.valueOf(webApp.isDefaultVersion()));
+        artifact.setAttribute(AppMConstants.APP_OVERVIEW_MAKE_AS_DEFAULT_VERSION, String.valueOf(
+                webApp.isDefaultVersion()));
+        artifact.setAttribute(AppMConstants.APP_SSO_SSO_PROVIDER, String.valueOf(webApp.getSsoProviderDetails().
+                getProviderName() + "-" + webApp.getSsoProviderDetails().getProviderVersion()));
+        artifact.setAttribute(AppMConstants.APP_SSO_SAML2_SSO_ISSUER, webApp.getSaml2SsoIssuer());
 
         if(webApp.getOriginVersion() != null){
             artifact.setAttribute(AppMConstants.APP_OVERVIEW_OLD_VERSION, webApp.getOriginVersion());
@@ -1487,21 +1517,21 @@ public class DefaultAppRepository implements AppRepository {
                 policyGroupIds[i] = webApp.getAccessPolicyGroups().get(i).getPolicyGroupId();
             }
 
-            artifact.setAttribute("uriTemplate_policyGroupIds", policyGroupIds.toString());
+            artifact.setAttribute(AppMConstants.APP_URITEMPLATE_POLICYGROUP_IDS, policyGroupIds.toString());
         }
 
         // Add URI Template attributes
         int counter = 0;
         for(URITemplate uriTemplate : webApp.getUriTemplates()){
-            artifact.setAttribute("uriTemplate_urlPattern" + counter, uriTemplate.getUriTemplate());
-            artifact.setAttribute("uriTemplate_httpVerb" + counter, uriTemplate.getHTTPVerb());
+            artifact.setAttribute(AppMConstants.APP_URITEMPLATE_URLPATTERN + counter, uriTemplate.getUriTemplate());
+            artifact.setAttribute(AppMConstants.APP_URITEMPLATE_HTTPVERB + counter, uriTemplate.getHTTPVerb());
 
             int policyGroupId = uriTemplate.getPolicyGroupId();
             if(policyGroupId <= 0){
                 policyGroupId = getPolicyGroupId(webApp.getAccessPolicyGroups(), uriTemplate.getPolicyGroupName());
             }
 
-            artifact.setAttribute("uriTemplate_policyGroupId" + counter, String.valueOf(policyGroupId));
+            artifact.setAttribute(AppMConstants.APP_URITEMPLATE_POLICYGROUP_IDS + counter, String.valueOf(policyGroupId));
 
             counter++;
         }
@@ -1939,7 +1969,7 @@ public class DefaultAppRepository implements AppRepository {
         SSOProvider ssoProvider = app.getSsoProviderDetails();
 
         if(ssoProvider == null){
-            ssoProvider = getDefaultSSOProvider();
+            ssoProvider = AppManagerUtil.getDefaultSSOProvider();
             app.setSsoProviderDetails(ssoProvider);
         }
 
@@ -1963,21 +1993,6 @@ public class DefaultAppRepository implements AppRepository {
 
         SSOConfiguratorUtil ssoConfiguratorUtil = new SSOConfiguratorUtil();
         ssoConfiguratorUtil.createSSOProvider(app, false);
-    }
-
-    private SSOProvider getDefaultSSOProvider() {
-
-        SSOProvider ssoProvider = new SSOProvider();
-
-        SSOEnvironment defaultSSOEnv = ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService().
-                                        getAPIManagerConfiguration().getSsoEnvironments().get(0);
-
-        ssoProvider.setProviderName(defaultSSOEnv.getName());
-        ssoProvider.setProviderVersion(defaultSSOEnv.getVersion());
-
-        ssoProvider.setClaims(new String[0]);
-
-        return ssoProvider;
     }
 
     private int persistSubscription(Connection connection, WebApp webApp, int applicationId, String subscriptionType,
