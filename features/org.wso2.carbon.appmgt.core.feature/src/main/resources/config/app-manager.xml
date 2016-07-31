@@ -320,6 +320,12 @@
         -->
         <EnableResponseSigning>true</EnableResponseSigning>
 
+        <!-- Validates Assertion expiry time of SAML Response -->
+        <ValidateAssertionExpiry>true</ValidateAssertionExpiry>
+
+	<!-- Timestamp skew applied to SAML Response Validity period. Default set to 5min --> 
+        <SAMLResponseValidityTimeStampSkew>300</SAMLResponseValidityTimeStampSkew>
+
         <!-- Enable SAML Assertion Signing when adding Service Provider and validate assertion signature in gateway.
          If you are switching from false to true, then already created services providers should be updated manully to have assertion signing true.
         -->

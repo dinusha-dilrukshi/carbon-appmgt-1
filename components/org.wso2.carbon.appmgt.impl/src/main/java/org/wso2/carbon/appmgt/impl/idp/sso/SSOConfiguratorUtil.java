@@ -327,6 +327,11 @@ public class SSOConfiguratorUtil {
                 getAPIManagerConfiguration().getFirstProperty(AppMConstants.SSO_CONFIGURATION_ENABLE_ASSERTION_SIGNING));
     }
 
+    public static boolean isValidateAssertionValidityPeriod() {
+        return Boolean.parseBoolean(ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService().
+                getAPIManagerConfiguration().getFirstProperty(AppMConstants.SSO_CONFIGURATION_VALIDATE_ASSERTION_EXPIRY));
+    }
+
     private static void handleException(String msg, Throwable t) throws AppManagementException {
         log.error(msg, t);
         throw new AppManagementException(msg, t);
