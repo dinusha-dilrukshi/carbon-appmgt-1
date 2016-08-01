@@ -30,15 +30,17 @@ include("/extensions/webapp/modules/jagg/jagg.jag");
         var propList = createProperties(props);
         var DEFAULT_TO_TRUE = true;
         var DEFAULT_TO_FALSE = false;
+        var DEFAULT_TIMESTAMP_SKEW_IN_SECONDS = 300;
         var isValid = true; //Assume all validations will fail
         var isAssertionValidityPeriodChecked = props.validateAssertionValidityPeriod ? props.validateAssertionValidityPeriod : DEFAULT_TO_FALSE;
         var isAudienceRestrictionChecked = props.validateAudienceRestriction ? props.validateAudienceRestriction : DEFAULT_TO_FALSE;
         var isAssertionSigningEnabled = props.assertionSigningEnabled ? props.assertionSigningEnabled : DEFAULT_TO_FALSE;
         var isResponseSigningEnabled = props.responseSigningEnabled ? props.responseSigningEnabled : DEFAULT_TO_FALSE;
+        var timeStampSkew = props.timeStampSkewInSeconds ? props.timeStampSkewInSeconds : DEFAULT_TIMESTAMP_SKEW_IN_SECONDS;
 
         //Step #1: Validate the token validity period
         if (isAssertionValidityPeriodChecked) {
-            isValid = Util.validateAssertionValidityPeriod(samlObj);
+            isValid = Util.validateAssertionValidityPeriod(samlObj, timeStampSkew);
         }
 
         //Break processing if the assertion validity period has expired
