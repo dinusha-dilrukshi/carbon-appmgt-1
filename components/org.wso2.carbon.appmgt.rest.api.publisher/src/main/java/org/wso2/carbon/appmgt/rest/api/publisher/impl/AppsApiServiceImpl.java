@@ -582,8 +582,7 @@ public class AppsApiServiceImpl extends AppsApiService {
             List<App> result = apiProvider.searchApps(appType, searchTerms);
 
             if (result.isEmpty()) {
-                String errorMessage = "Could not find requested application.";
-                RestApiUtil.handleBadRequest(errorMessage, log);
+                RestApiUtil.handleResourceNotFoundError(appType, appId, log);
             }
 
             App app = result.get(0);
@@ -664,8 +663,7 @@ public class AppsApiServiceImpl extends AppsApiService {
 
             List<App> result = apiProvider.searchApps(appType, searchTerms);
             if (result.isEmpty()) {
-                String errorMessage = "Could not find requested application.";
-                return RestApiUtil.buildNotFoundException(errorMessage, appId).getResponse();
+                RestApiUtil.handleResourceNotFoundError(appType, appId, log);
             }
 
             App app = result.get(0);
@@ -1140,7 +1138,7 @@ public class AppsApiServiceImpl extends AppsApiService {
             GenericArtifact artifact = artifactManager.getGenericArtifact(appId);
             //Validate App Id
             if (artifact == null) {
-                RestApiUtil.handleBadRequest("Invalid App Id.", log);
+                RestApiUtil.handleResourceNotFoundError(appType, appId, log);
             }
 
             String state = artifact.getLifecycleState().toUpperCase();
@@ -1179,7 +1177,7 @@ public class AppsApiServiceImpl extends AppsApiService {
             GenericArtifact artifact = artifactManager.getGenericArtifact(appId);
             //Validate App Id
             if (artifact == null) {
-                RestApiUtil.handleBadRequest("Invalid App Id.", log);
+                RestApiUtil.handleResourceNotFoundError(appType, appId, log);
             }
 
             String historyRegPath = getHistoryPath(artifact);
