@@ -373,6 +373,10 @@ public class DefaultAppRepository implements AppRepository {
         String query = "INSERT INTO resource (UUID,TENANTID,FILENAME,CONTENTLENGTH,CONTENTTYPE,CONTENT) VALUES (?,?,?,?,?,?)";
         try {
             connection = AppMgtDataSourceProvider.getStorageDBConnection();
+            if (connection.getMetaData().getDriverName().contains(AppMConstants.DRIVER_TYPE_ORACLE)) {
+                query = "INSERT INTO \"resource\" (UUID,TENANTID,FILENAME,CONTENTLENGTH,CONTENTTYPE,CONTENT) VALUES " +
+                        "(?,?,?,?,?,?)";
+            }
             preparedStatement = connection.prepareStatement(query);
             preparedStatement.setString(1, fileContent.getUuid());
             preparedStatement.setString(2, getTenantDomainOfCurrentUser());

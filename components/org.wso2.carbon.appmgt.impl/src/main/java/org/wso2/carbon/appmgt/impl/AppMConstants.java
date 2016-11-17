@@ -45,6 +45,8 @@ public final class AppMConstants {
     //This is the resource name of API
     public static final String API_RESOURCE_NAME ="/webapp";
 
+    public static final String DRIVER_TYPE_ORACLE = "Oracle";
+
     //This is registry status property
     public static final String WEB_APP_LIFECYCLE_STATUS = "registry.lifecycle.WebAppLifeCycle.state";
     public static final String MOBILE_APP_LIFECYCLE_STATUS = "registry.lifecycle.MobileAppLifeCycle.state";
