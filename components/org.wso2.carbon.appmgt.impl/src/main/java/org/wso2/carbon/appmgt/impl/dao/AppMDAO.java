@@ -510,10 +510,10 @@ public class AppMDAO {
     public int getBusinessOwnersCount(int tenantId) throws AppManagementException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
-        int rowcount = 0;
+        int recordCount = 0;
         ResultSet resultSet = null;
 
-        String sqlQuery = "SELECT COUNT(*) AS ROWCOUNT FROM APM_BUSINESS_OWNER WHERE TENANT_ID = ?";
+        String sqlQuery = "SELECT COUNT(*) AS RECORD_COUNT FROM APM_BUSINESS_OWNER WHERE TENANT_ID = ?";
 
         try {
             connection = APIMgtDBUtil.getConnection();
@@ -522,14 +522,14 @@ public class AppMDAO {
             resultSet = preparedStatement.executeQuery();
 
             if (resultSet.next()) {
-                rowcount = resultSet.getInt("ROWCOUNT");
+                recordCount = resultSet.getInt("RECORD_COUNT");
             }
         } catch (SQLException e) {
             handleException("Error when getting the row count of business owners table. ", e);
         } finally {
             APIMgtDBUtil.closeAllConnections(preparedStatement, connection, resultSet);
         }
-        return rowcount;
+        return recordCount;
     }
 
     /**
@@ -4309,7 +4309,7 @@ public class AppMDAO {
         int recordCount = 0;
 
         String sqlQuery =
-                "SELECT COUNT(*) AS ROWCOUNT FROM APM_APP_DEFAULT_VERSION WHERE APP_NAME=? AND APP_PROVIDER=? AND " +
+                "SELECT COUNT(*) AS RECORD_COUNT FROM APM_APP_DEFAULT_VERSION WHERE APP_NAME=? AND APP_PROVIDER=? AND " +
                         "TENANT_ID=? ";
 
         try {
@@ -4322,7 +4322,7 @@ public class AppMDAO {
             rs = prepStmt.executeQuery();
 
             if (rs.next()) {
-                recordCount = rs.getInt("ROWCOUNT");
+                recordCount = rs.getInt("RECORD_COUNT");
             }
 
             if (recordCount == 0) {
@@ -4565,19 +4565,19 @@ public class AppMDAO {
 
         String query = "SELECT DISTINCT "
                 + "APP.APP_ID AS APP_ID, APP.UUID AS APP_UUID, POLICY_GROUP.POLICY_GRP_ID AS POLICY_GRP_ID,"
-                + "RULE.ENTITLEMENT_POLICY_PARTIAL_ID AS RULE_ID, RULE.CONTENT AS RULE_CONTENT "
+                + "POLICY_RULE.ENTITLEMENT_POLICY_PARTIAL_ID AS RULE_ID, POLICY_RULE.CONTENT AS RULE_CONTENT "
                 + "FROM "
                 + "APM_APP APP, "
                 + "APM_POLICY_GROUP POLICY_GROUP, "
                 + "APM_POLICY_GROUP_MAPPING APP_GROUP, "
-                + "APM_ENTITLEMENT_POLICY_PARTIAL RULE, "
+                + "APM_ENTITLEMENT_POLICY_PARTIAL POLICY_RULE, "
                 + "APM_POLICY_GRP_PARTIAL_MAPPING GROUP_RULE "
                 + "WHERE APP.APP_ID = "
                 + "(SELECT APP_ID FROM APM_APP WHERE APP_PROVIDER = ? AND APP_NAME = ? AND APP_VERSION = ? ) "
                 + "AND APP_GROUP.APP_ID = APP.APP_ID "
                 + "AND APP_GROUP.POLICY_GRP_ID = POLICY_GROUP.POLICY_GRP_ID "
                 + "AND GROUP_RULE.POLICY_GRP_ID = POLICY_GROUP.POLICY_GRP_ID "
-                + "AND GROUP_RULE.POLICY_PARTIAL_ID = RULE.ENTITLEMENT_POLICY_PARTIAL_ID";
+                + "AND GROUP_RULE.POLICY_PARTIAL_ID = POLICY_RULE.ENTITLEMENT_POLICY_PARTIAL_ID";
 
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
@@ -8126,7 +8126,7 @@ public class AppMDAO {
         try {
             conn = APIMgtDBUtil.getConnection();
             String sqlQuery =
-                    "SELECT COUNT(*) AS ROWCOUNT FROM APM_APP WHERE APP_NAME =? AND APP_PROVIDER =? AND APP_VERSION!=?";
+                    "SELECT COUNT(*) AS RECORD_COUNT FROM APM_APP WHERE APP_NAME =? AND APP_PROVIDER =? AND APP_VERSION!=?";
             ps = conn.prepareStatement(sqlQuery);
             ps.setString(1, apiIdentifier.getApiName());
             ps.setString(2, apiIdentifier.getProviderName());
@@ -8134,7 +8134,7 @@ public class AppMDAO {
 
             rs = ps.executeQuery();
             if (rs.next()) {
-                hasMoreVersions = (rs.getInt("ROWCOUNT") > 0);
+                hasMoreVersions = (rs.getInt("RECORD_COUNT") > 0);
             }
         } catch (SQLException e) {
             handleException("Error while getting more version details for the app" +
@@ -8162,7 +8162,7 @@ public class AppMDAO {
         try {
             conn = APIMgtDBUtil.getConnection();
             String sqlQuery =
-                    "SELECT COUNT(*) AS ROWCOUNT FROM APM_APP_DEFAULT_VERSION WHERE APP_NAME =? AND APP_PROVIDER =? " +
+                    "SELECT COUNT(*) AS RECORD_COUNT FROM APM_APP_DEFAULT_VERSION WHERE APP_NAME =? AND APP_PROVIDER =? " +
                             "AND  " +
                             "(DEFAULT_APP_VERSION=? OR PUBLISHED_DEFAULT_APP_VERSION =?)";
             ps = conn.prepareStatement(sqlQuery);
@@ -8173,7 +8173,7 @@ public class AppMDAO {
 
             rs = ps.executeQuery();
             if (rs.next()) {
-                isDefaultVersion = (rs.getInt("ROWCOUNT") > 0);
+                isDefaultVersion = (rs.getInt("RECORD_COUNT") > 0);
             }
         } catch (SQLException e) {
             handleException("Error while checking if the default version for the app" +
