@@ -4170,6 +4170,13 @@ public class AppMDAO {
                         "FROM APM_WORKFLOWS " +
                         "WHERE WF_REFERENCE = ? AND ROWNUM <= 1 " +
                         "ORDER BY WF_CREATED_TIME ";
+            } else if (connection.getMetaData().getDriverName().contains("MS SQL") ||
+                    connection.getMetaData().getDriverName().contains("Microsoft")) {
+                query = "SELECT TOP 1 WF_STATUS, WF_EXTERNAL_REFERENCE, WF_CREATED_TIME, WF_REFERENCE, TENANT_DOMAIN, " +
+                        "TENANT_ID, WF_TYPE, WF_STATUS_DESC " +
+                        "FROM APM_WORKFLOWS " +
+                        "WHERE WF_REFERENCE = ? " +
+                        "ORDER BY WF_CREATED_TIME";
             } else {
                 query = "SELECT WF_STATUS, WF_EXTERNAL_REFERENCE, WF_CREATED_TIME, WF_REFERENCE, TENANT_DOMAIN, " +
                         "TENANT_ID, WF_TYPE, WF_STATUS_DESC " +
