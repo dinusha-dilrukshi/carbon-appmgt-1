@@ -468,6 +468,17 @@ public class AppMDAO {
             if (connection.getMetaData().getDriverName().contains("Oracle")) {
                 queryToGetBusinessOwner = "SELECT * FROM APM_BUSINESS_OWNER WHERE (OWNER_NAME LIKE ? OR " +
                         "OWNER_EMAIL LIKE ? OR OWNER_SITE LIKE ? OR OWNER_DESC LIKE ?) AND TENANT_ID = ? AND ROWNUM >= ? AND ROWNUM <= ?";
+            } else if (connection.getMetaData().getDriverName().contains("MS SQL") ||
+                    connection.getMetaData().getDriverName().contains("Microsoft")) {
+                queryToGetBusinessOwner =
+                        "SELECT * from " +
+                                "(SELECT ROW_NUMBER() OVER(ORDER BY OWNER_ID) AS RowNum, * from APM_BUSINESS_OWNER " +
+                                "WHERE " +
+                                "(OWNER_NAME LIKE ? OR OWNER_EMAIL LIKE ? OR OWNER_SITE LIKE ? OR OWNER_DESC LIKE ?) " +
+                                "AND TENANT_ID = ?) " +
+                                "as Businee_Owners " +
+                                "WHERE RowNum >= ? AND RowNum <= ?";
+
             } else {
                 queryToGetBusinessOwner = "SELECT * FROM APM_BUSINESS_OWNER WHERE (OWNER_NAME LIKE ? OR " +
                         "OWNER_EMAIL LIKE ? OR OWNER_SITE LIKE ? OR OWNER_DESC LIKE ?) AND TENANT_ID = ? LIMIT ? , ? ";
