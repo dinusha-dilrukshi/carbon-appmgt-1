@@ -142,8 +142,9 @@ require('/modules/store.js').exec(function (ctx) {
             assets.forEach(function (asset) {
 
                 //set rating
-                if (JSON.parse(social.getRating(type + ":" + asset.id))) {
-                    asset.rating = Math.floor(JSON.parse(social.getRating(type + ":" + asset.id)).rating);
+                var ratingObj = JSON.parse(social.getRating(type + ":" + asset.id));
+                if (ratingObj) {
+                    asset.rating = Math.floor(ratingObj.rating);
                 } else {
                     asset.rating = 0;
                 }
