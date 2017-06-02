@@ -860,6 +860,8 @@ Store.prototype.invalidate = function (type, key) {
 };
 
 Store.prototype.search = function (options, paging) {
+    log.info("#########options##########" + stringify(options));
+    log.info("#########pa")
     var i, length, types, assets;
     var type = options.type;
     var carbonContext = Packages.org.wso2.carbon.context.CarbonContext.getThreadLocalCarbonContext();

@@ -1,6 +1,8 @@
 <%
+var log = new Log();
 var caramel;
 var customType;
+var start = java.lang.System.currentTimeMillis();
 
 include('/extensions/assets/webapp/modules/jagg/jagg.jag');
 var manager = jagg.module("manager");
@@ -50,6 +52,7 @@ require('/modules/store.js').exec(function (ctx) {
     }
 
     paging = store.assetsPaging(request);
+    //log.info("###home.jag###" + query);
     query = query ? search.build(String(query)) : null;
 
     var SITE_TYPE = 'site';
@@ -66,6 +69,7 @@ require('/modules/store.js').exec(function (ctx) {
     var tagInfo = {};
 
     types.forEach(function (type) {
+       // log.info("##Type###" + type);
         if (!storeHostObj.isAssetTypeEnabled(type)) {
             return
         }
@@ -105,6 +109,7 @@ require('/modules/store.js').exec(function (ctx) {
                 options.lifecycleState = ["published"];
                 assets = store.taggeds(type, options, paging);
             } else {
+                // log.info("### Tag ##" + tag);
                 if (customType == MOBILEAPP_TYPE) {
                     assets = store.assets(customType, paging);
                 } else {
@@ -135,7 +140,9 @@ require('/modules/store.js').exec(function (ctx) {
                         type: type,
                         attributes: siteAttribute
                     };
+                   // log.info("### Paging ######" + stringify(paging));
                     assets = store.search(siteOption, paging);
+                   // log.info("####Assets return from store.search() ###" + stringify(assets));
                 }
             }
 
@@ -258,7 +265,10 @@ require('/modules/store.js').exec(function (ctx) {
             items[i].assets = null;
         }
     }
-
+    var username = util.resolveUserName(user);
+    end  = java.lang.System.currentTimeMillis();
+    var timeTakenForLogic = end - start;
+    log.info("##LOGIC##"+ timeTakenForLogic);
     caramel.render({
         title: 'Apps | WSO2 Cloud - User Portal',
         header: {
@@ -267,7 +277,7 @@ require('/modules/store.js').exec(function (ctx) {
             storeTenantDomain: storeTenantDomain,
             enabledTypeList: enabledTypeList,
             isSelfSignUpEnabledForTenant: isSelfSignupEnabledForTenant,
-            strictUserName : util.resolveUserName(user)
+            strictUserName : username
         },
         tags: {
             data: tagInfo
@@ -285,6 +295,8 @@ require('/modules/store.js').exec(function (ctx) {
         recentAssets: recentItems
     });
 }, request, response, session);
+var timeTakneForUI = java.lang.System.currentTimeMillis() - end;
+log.info( "##UI RENDERING##" + timeTakneForUI);
 
 function getServiceDir(serviceName) {
     return '/extensions/assets/webapp/services/' + serviceName;
