@@ -177,12 +177,7 @@ var store = function (o, session) {
     //Check for logged-in user. If there is a logged-in user, then check whether the user is requesting to load
     //the anonymous tenant registry of an another tenant
     if (user && !isUserTenantIdDifferFromUrlTenantId(user.tenantId, tenantId)) {
-        store = session.get(TENANT_STORE);
-        if (cached && store) {
-            return store;
-        }
         store = new Store(tenantId, session);
-        session.put(TENANT_STORE, store);
         return store;
     }
     configs = server.configs(tenantId);
@@ -860,8 +855,6 @@ Store.prototype.invalidate = function (type, key) {
 };
 
 Store.prototype.search = function (options, paging) {
-    log.info("#########options##########" + stringify(options));
-    log.info("#########pa")
     var i, length, types, assets;
     var type = options.type;
     var carbonContext = Packages.org.wso2.carbon.context.CarbonContext.getThreadLocalCarbonContext();
@@ -876,7 +869,6 @@ Store.prototype.search = function (options, paging) {
     if (type) {
         var assetz = this.assetManager(type).search(options, builtPaging);
         for (i = 0; i < assetz.length; i++) {
-           // assetz[i].indashboard = this.isuserasset(assetz[i].id, type);
             if (assetz[i].attributes.overview_description.indexOf(']') > -1 &&
                 assetz[i].attributes.overview_description.split(']')[0] == "sample") {
                 assetz[i].updatedAcsUrl = "?tenantDomain=" + tenantdomain;
@@ -1031,17 +1023,10 @@ var storeManagers = function (o, session, tenantId) {
  @return: An instance of a MasterManager object either anon or store
  */
 function handleLoggedInUser(o, session) {
-    var storeMasterManager = session.get(TENANT_STORE_MANAGERS);
+    var storeMasterManager;
     var server = require('store').server;
-
     var tenantId = (o instanceof Request) ? server.tenant(o, session).tenantId : o;
-
-    if (storeMasterManager) {
-        return storeMasterManager;
-    }
-
     storeMasterManager = new StoreMasterManager(tenantId, session);
-    session.put(TENANT_STORE_MANAGERS, storeMasterManager);
 
     return storeMasterManager;
 }

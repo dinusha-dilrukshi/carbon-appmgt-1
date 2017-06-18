@@ -70,8 +70,6 @@ var modelManager = function () {
         //Attach the functions
         attachDefaultOperations(model, this);
 
-        var temp = new model();
-
         //Add the model to the list of managed models
         this.managedModels[schema.name] = model;
     };
